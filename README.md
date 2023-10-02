@@ -118,7 +118,7 @@ The purpose of this is to give the agents the same information pilot's use from 
 * V<sub>Y</sub> - airspeed forbest rate of climb
 * V<sub>NE</sub> - airspeed to never exceed
 * V<sub>MAX</sub> - airspeed for maximum cruise structural limit
-* V<sub>A<sub> - airspeed for maximum maneuver structural limit or in turbulent/windy conditions
+* V<sub>A</sub> - airspeed for maximum maneuver structural limit or in turbulent/windy conditions
 * LL - Load Limit ("G Limit")
 * Critical AOA - Angle Of Attack at which the aircraft will stall
 * OEW - Operating Empty Weight
