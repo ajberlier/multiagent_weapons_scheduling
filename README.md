@@ -1,4 +1,4 @@
-*Note:* This documentation is my initial thought process prior to any code development and very much subject to change over the course of this project. 
+*Note:* This documentation is my initial thought process prior to any code development and very much subject to change over the course of this project. I will be moving this to the wiki and only maintaining instructions to run the code base here in the future.
 
 # Multi-agent Navigation and Weapons Scheduling Environment
 This is is a multi-agent navigation and weapons scheduling Gymnasium environment with baseline command and control algorithms. The initial develop is starting very simple in order to support rapid prototyping of software architecture, data flow, and experimenting with a variety of command and control algorithms. The intention is to incrementally grow capability and transition to higher fidelity models and simulation for increasing domain knowledge at each stage of development. While the intention is to stretch this project to the highest fidelity possible in the open source world, it is still a hobby project focused on experimenting with and evaluating a variety of ideas that I have been curious to explore.
@@ -18,8 +18,8 @@ The environment scenario configuration file (scenario.json) defines the initial 
       * Between Team
     * Agent (Agents on team, can be multiple)
       * Duplicates (number of duplications of this agent config on this team)
-      * Individual Platform State
       * Platform Type
+      * Individual Platform State
         * Maximum Fuel
         * Maximum Thrust
       * Sensor Systems
@@ -77,11 +77,11 @@ This simulation supports surface and air platforms.
 
 ### Guns
 
-### Short Range Hardkill (SHK) - Within Visual Range (WVR) Air-to-Air Missile 
+### Within Visual Range (WVR) Air-to-Air Missile (AAM)
 
-### Medium Range Hardkill (MHK)  - Within Visual Range (WVR) Air-to-Air Missile 
+### Within Visual Range (WVR) Air-to-Air Missile (AAM)
 
-### Softkill (EWSK) - Electronic Counter Measures (ECM)
+### Electronic Counter Measures (ECM)
 
 ## Weapon Features
 
