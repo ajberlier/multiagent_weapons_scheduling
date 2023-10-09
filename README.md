@@ -1,3 +1,6 @@
+# Current Status
+https://github.com/ajberlier/multiagent_weapons_scheduling/assets/14355442/d9eb93b9-1f20-40eb-abf1-628d7507be8c
+
 *Note:* This documentation is my initial thought process prior to any code development and very much subject to change over the course of this project. I will be moving this to the wiki and only maintaining instructions to run the code base here in the future.
 
 # Multi-agent Navigation and Weapons Scheduling Environment
