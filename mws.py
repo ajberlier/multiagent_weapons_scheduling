@@ -1,6 +1,7 @@
 import math
 import turtle
 import random
+import itertools
 
 # TODO: pull this from system info so that it fits any screen full
 SCREEN_WIDTH = 1280
@@ -18,6 +19,7 @@ pen.color("white")
 pen.penup()
 pen.hideturtle()
 
+
 class Environment: 
     """
     Base class for the environment.
@@ -31,26 +33,32 @@ class Environment:
         self.end_of_battle = False
 
     def build_scenario(self):
+        """
+        Build the scenario based on the config files.
+        """
+
         sprites.clear()
-        # TODO: create blue agents with weapons
         # create blue agent sprite
-        blue_agent = Agent(0, 0, "triangle", "blue", "blue")
+        blue_agent = Agent(0, 0, "blue")
         sprites.append(blue_agent)
+        # TODO: load multiple different weapon types based on config file
         blue_agent.load_amm()
         
-
         # create red agents
         for _ in range(self.num_red_agents):
             x = random.randint(-self.width/2.0, self.width/2.0)
             y = random.randint(-self.height/2.0, self.height/2.0)
             dx = random.randint(-2, 2)
             dy = random.randint(-2, 2)
-            sprites.append(Agent(x, y, "triangle", "red", "red"))
+            sprites.append(Agent(x, y,"red"))
             sprites[-1].dx = dx
             sprites[-1].dy = dy
 
 
     def render_border(self, pen):
+        """
+        Render the game border to establish the boundaries of the game.
+        """
         pen.color("white")
         pen.width(3)
         pen.penup()
@@ -72,14 +80,6 @@ class Environment:
 class Sprite:
     """
     Base class for all game objects.
-
-    Attributes:
-        x: x coordinate of the sprite
-        y: y coordinate of the sprite
-        shape: shape of the sprite
-        color: color of the sprite
-        dx: change in x +dx right, -dx left
-        dy: change in y +dy up, -dy down
     """
     def __init__(self, x, y, shape, color):
         self.x = x
@@ -90,23 +90,30 @@ class Sprite:
         self.dx = 0
         self.dy = 0
         self.da = 0
-        self.thrust = 0.0
+        self.thrust = 0.1
         self.acceleration = 0.5
         self.health = 100
         self.max_health = 100
         self.max_fuel = 1000
-        self.prox_fuse_radius = 20
         self.radar = 900
-        self.state = "alive"
+        self.alive = True
+        self.state = "ready"
 
-    def collision(self, other):
-        if math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2) < self.prox_fuse_radius:
+    def collision(self, other, radius=0):
+        """
+        Check if two sprites have collided, based on a collision radius.
+        """
+        dist = math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+        if dist <= radius:
             return True
         else:
             return False
 
     def update(self):
-        if self.state == "alive":
+        """
+        Update the sprite step.
+        """
+        if self.alive:
             self.heading += self.da
             self.heading %= 360
             self.dx += self.thrust * math.cos(math.radians(self.heading))
@@ -119,7 +126,7 @@ class Sprite:
 
             # check health
             if self.health <= 0:
-                self.state = "dead"
+                self.alive = False
 
     def boarder_check(self):
         """
@@ -127,19 +134,22 @@ class Sprite:
         """
         if self.x > env.width/2.0 - 10:
             self.x = env.width/2.0 - 10
-            self.dx *= -1
+            self.dx *= -0.1
         elif self.x < -env.width/2.0 + 10:
             self.x = -env.width/2.0 + 10
-            self.dx *= -1
+            self.dx *= -0.1
         if self.y > env.height/2.0 - 10:
             self.y = env.height/2.0 - 10
-            self.dy *= -1
+            self.dy *= -0.1
         elif self.y < -env.height/2.0 + 10:
             self.y = -env.height/2.0 + 10
-            self.dy *= -1
+            self.dy *= -0.1
 
     def render(self, pen):
-        if self.state == "alive": 
+        """
+        Draw the sprite.
+        """
+        if self.alive: 
             pen.goto(self.x, self.y)
             pen.shape(self.shape)
             pen.color(self.color)
@@ -181,45 +191,69 @@ class Agent(Sprite):
     """
     Agent class for all agent game objects. 
     """
-    def __init__(self, x, y, shape, color, team):
-        super().__init__(x, y, shape, color)
+    def __init__(self, x, y, team):
+        super().__init__(x, y, "triangle", team)
         self.team = team
         self.health = 100
         self.score = 0
         self.heading = 90
         self.da = 0
-        self.num_aam = 4
+        self.num_aam = 50
         self.aam_loadout = []
 
     def rotate_left(self):
+        """
+        Rotate the agent to the left.
+        """
         self.da = 5
 
     def rotate_right(self):
+        """
+        Rotate the agent to the right.
+        """
         self.da = -5
 
     def stop_rotation(self):
+        """
+        Stop rotating the agent.
+        """
         self.da = 0
 
     def accelerate(self):
+        """
+        Increase agent thrust.
+        """
         # TODO: make this a throttle position instead
         self.thrust += self.acceleration
 
     def decelerate(self):
+        """
+        Decrease agent thrust.
+        """
         self.thrust = 0.0
 
     def load_amm(self):
+        """
+        Add the agent's air-to-air missile (AAM) loadout.
+        """
         for _ in range(self.num_aam):
-            aam = AAM(self.x, self.y, "triangle", "yellow", self.team)
+            aam = AAM(self.x, self.y, self.team)
             self.aam_loadout.append(aam)
             sprites.append(aam)
 
     def fire_aam(self):
+        """
+        Fire an air-to-air missile (AAM) if there is one available.
+        """
         if len(self.aam_loadout) > 0:
             aam = self.aam_loadout.pop()
             aam.fire(self.x, self.y, self.heading, self.dx, self.dy)
 
     def render(self, pen):
-        if self.state == "alive":
+        """
+        Draw the agent
+        """
+        if self.alive:
             pen.goto(self.x, self.y)
             pen.shape(self.shape)
             pen.shapesize(0.5, 1.0, None)
@@ -238,21 +272,25 @@ class AAM(Agent):
     """
     Air-to-Air Missile (AAM) weapon game objects.
     """
-    def __init__(self, x, y, shape, color, team):
-        super().__init__(x, y, shape, color, team)
+    def __init__(self, x, y, team):
+        super().__init__(x, y, team)
         self.team = team
         self.x = x
         self.y = y
-        self.max_fuel = 300
+        self.max_fuel = 500
         self.fuel = self.max_fuel
-        self.thrust = 4.0
+        self.thrust = 1.0
         self.prox_fuse_radius = 4
         # TODO: make this a function of probability of kill based on range
         self.damage = 50
-        self.warmup_delay = 1
+        self.warmup_delay = 10
+        self.prox_fuse_radius = 20
 
     def fire(self, x, y, heading, dx, dy):
-        if self.state == "alive":
+        """
+        Seperate the AAM from the agent and give it thrust.
+        """
+        if self.alive:
             self.state = "away"
             self.x = x
             self.y = y
@@ -261,26 +299,53 @@ class AAM(Agent):
             self.dy = dy
             
             # launch weapon
-            self.dx = math.cos(math.radians(self.heading)) * self.thrust
-            self.dy = math.sin(math.radians(self.heading)) * self.thrust
+            self.dx = self.thrust * math.cos(math.radians(self.heading))
+            self.dy = self.thrust * math.sin(math.radians(self.heading))
 
     def update(self):
+        """
+        Update the AAM step.
+        """
         if self.state == "away":
             self.fuel -= self.thrust
             if self.fuel <= 0:
-                self.state = "dead"
-            self.heading += self.da
-            self.heading %= 360
+                self.alive = False
+            self.dx += self.thrust * math.cos(math.radians(self.heading))
+            self.dy += self.thrust * math.sin(math.radians(self.heading))
             self.x += self.dx
             self.y += self.dy
+            
 
     def render(self, pen):
+        """
+        Draw the AAM.
+        """
         if self.state == "away":
-            pen.shapesize(0.2, 0.2, None)
+            pen.shape(self.shape)
+            pen.shapesize(0.1, 0.2, None)
             pen.goto(self.x, self.y)
             pen.setheading(self.heading)
             pen.color(self.color)
             pen.stamp()
+    
+    
+class GNC():
+    """
+    Guidance, Navigation, and Control (GNC).
+    """
+    # FIXME: do this all properly when i have time with velocity and acceleration
+    def __init__(self):
+        pass
+
+    def clos(agent, target):
+        """
+        Basic Command to Line of Sight (CLOS) guidance law.
+        """
+        # set heading to target
+        heading = math.degrees(math.atan2(target.y - agent.y, target.x - agent.x))
+
+        return heading
+
 
 # create environment
 env = Environment()
@@ -314,36 +379,37 @@ while True:
 
     # update sprites
     for sprite in sprites:
+        if sprite.team == "red" and sprite.alive:
+            sprite.heading = GNC.clos(sprite, blue_agent)
+            sprite.thrust = 0.05
         sprite.update()
 
     # check for collisions
-    for sprite1, sprite2 in zip(sprites, sprites[1:]):
+    for sprite1, sprite2 in itertools.combinations(sprites, 2):
         # FIXME: need to implement a warmup delay to prevent killing yourself on launch
-        if sprite1.team != sprite2.team:
-            if sprite1.state == "alive" and sprite2.state == "alive":
-                if sprite1.collision(sprite2):
-                    if isinstance(sprite1, Agent) and isinstance(sprite2, Agent):
-                        sprite1.state = "dead"
-                        sprite2.state = "dead"
-                    elif isinstance(sprite1, AAM) and isinstance(sprite2, AAM):
-                        sprite1.state = "dead"
-                        sprite2.state = "dead"
-                    elif (isinstance(sprite1, AAM) and isinstance(sprite2, Agent)):
-                        sprite1.state = "dead"
-                        sprite2.health -= sprite1.damage
-                    elif isinstance(sprite1, Agent) and isinstance(sprite2, AAM):
-                        sprite1.health -= sprite2.damage
-                        sprite2.state = "dead"
+        if sprite1.team != sprite2.team and sprite1.alive and sprite2.alive:
+            if isinstance(sprite1, Agent) and isinstance(sprite2, Agent) and sprite1.collision(sprite2):
+                    sprite1.alive = False
+                    sprite2.alive = False
+            elif isinstance(sprite1, AAM) and isinstance(sprite2, AAM) and sprite1.collision(sprite2, sprite1.prox_fuse_radius):
+                    sprite1.alive = False
+                    sprite2.alive = False
+            elif isinstance(sprite1, AAM) and isinstance(sprite2, Agent) and sprite1.collision(sprite2, sprite1.prox_fuse_radius):
+                sprite1.alive = False
+                sprite2.health -= sprite1.damage
+            elif isinstance(sprite1, Agent) and isinstance(sprite2, AAM) and sprite1.collision(sprite2, sprite2.prox_fuse_radius):
+                sprite1.health -= sprite2.damage
+                sprite2.alive = False
                     
     # render sprites
     for sprite in sprites:
         sprite.render(pen)
 
     # check for end of battle
-    if not any(sprite.team == "red" and sprite.state == "alive" for sprite in sprites):
+    if not any(sprite.team == "red" and sprite.alive for sprite in sprites):
         env.end_of_battle = True
         winner = "Blue Team"
-    elif not any(sprite.team == "blue" and sprite.state == "alive" for sprite in sprites):
+    elif not any(sprite.team == "blue" and sprite.alive for sprite in sprites):
         env.end_of_battle = True
         winner = "Red Team"
     # TODO: if white is dead, REDFOR wins
